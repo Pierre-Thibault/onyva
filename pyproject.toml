@@ -1,15 +1,69 @@
 [project]
-name = "hello-world"
+name = "onyva"
 version = "0.1.0"
-description = "Add your description here"
+description = "Personal data management tool"
 requires-python = ">=3.14"
 dependencies = [
- "pydantic>=2.12.5",
+    "babel",
+    "bottle",
+    "dynaconf",
+    "mako",
+    "marko",
+    "pydantic>=2.12.5",
+    "pyyaml",
+    "structlog",
+]
+
+[dependency-groups]
+dev = [
+    "basedpyright",
+    "icecream",
+    "pytest",
+    "pytest-bdd",
+    "pytest-cov",
+    "ruff",
+    "sphinx",
+    "sphinx-intl",
+    "sphinxcontrib-mermaid",
+    "tox",
+    "webtest",
+]
+
+[tool.ruff.lint]
+select = [
+    "T203",  # Detect leftover icecream (ic) calls
 ]
 
 [project.scripts]
-hello = "hello_world:hello"
+onyva = "onyva.web.app:run"
+check = "scripts.check:main"
+docs = "scripts.docs:main"
+i18n = "scripts.i18n:main"
 
 [build-system]
-requires = ["uv_build>=0.9.0,<0.10.0"]
+requires = ["uv_build>=0.10.0,<0.11.0"]
 build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 120
+
+[tool.basedpyright]
+typeCheckingMode = "strict"
+pythonVersion = "3.14"
+stubPath = "typings"
+
+[tool.coverage.run]
+source = ["src/onyva"]
+branch = true
+omit = [
+    "src/scripts/*",
+    "src/onyva/core/models.py",  # TODO: add tests
+]
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+]

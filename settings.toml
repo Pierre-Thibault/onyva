@@ -1,0 +1,7 @@
+[default]
+LOG_FORMAT = "console"
+LOG_LEVEL = "DEBUG"
+
+[production]
+LOG_FORMAT = "json"
+LOG_LEVEL = "INFO"

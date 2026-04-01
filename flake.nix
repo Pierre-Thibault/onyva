@@ -45,37 +45,40 @@
         root = "$REPO_ROOT";
       };
 
-      pythonSets = forAllSystems (
+      # Per-system configuration
+      perSystem =
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
           python = pkgs.python314;
-        in
-        (pkgs.callPackage pyproject-nix.build.packages {
-          inherit python;
-        }).overrideScope
-          (
-            lib.composeManyExtensions [
-              pyproject-build-systems.overlays.wheel
-              overlay
-            ]
-          )
-      );
 
-    in
-    {
-      devShells = forAllSystems (
-        system:
-        let
-          pkgs = nixpkgs.legacyPackages.${system};
-          pythonSet = pythonSets.${system}.overrideScope editableOverlay;
-          virtualenv = pythonSet.mkVirtualEnv "hello-world-dev-env" workspace.deps.all;
+          pythonSet =
+            (pkgs.callPackage pyproject-nix.build.packages {
+              inherit python;
+            }).overrideScope
+              (
+                lib.composeManyExtensions [
+                  pyproject-build-systems.overlays.wheel
+                  overlay
+                ]
+              );
+
+          editablePythonSet = pythonSet.overrideScope editableOverlay;
+          python3Packages = pkgs.python314Packages;
         in
         {
-          default = pkgs.mkShell {
+          devShell = pkgs.mkShell {
             packages = [
-              virtualenv
+              (editablePythonSet.mkVirtualEnv "hello-world-dev-env" workspace.deps.all)
               pkgs.uv
+              pkgs.nodePackages.prettier
+              pkgs.neovim
+              pkgs.basedpyright
+              pkgs.htmx-lsp
+              pkgs.ruff
+              python3Packages.python-lsp-server
+              python3Packages.pylsp-rope
+              python3Packages.debugpy
             ];
             env = {
               UV_NO_SYNC = "1";
@@ -87,11 +90,18 @@
               export REPO_ROOT=$(git rev-parse --show-toplevel)
             '';
           };
-        }
-      );
+
+          package = pythonSet.mkVirtualEnv "hello-world-env" workspace.deps.default;
+        };
+
+    in
+    {
+      devShells = forAllSystems (system: {
+        default = (perSystem system).devShell;
+      });
 
       packages = forAllSystems (system: {
-        default = pythonSets.${system}.mkVirtualEnv "hello-world-env" workspace.deps.default;
+        default = (perSystem system).package;
       });
     };
 }

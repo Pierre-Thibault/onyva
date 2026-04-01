@@ -1,2 +1,8 @@
 .direnv/
 __pycache__
+.coverage
+_build
+_publish
+_static
+_templates
+.venv

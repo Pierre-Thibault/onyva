@@ -1,0 +1,17 @@
+# This is a port of my Helix config for this project.
+# I keep my Python config in the home directory.
+# Is it useful to you? Is it harmful? Raise an issue to give feedback if you want to.
+
+[language-server.htmx-lsp]
+command = "htmx-lsp"
+
+[[language]]
+name = "html"
+language-servers = ["vscode-html-language-server", "htmx-lsp", "typos", "scls", "hx-lsp"]
+formatter = { command = "prettier", args = ["--parser", "html"] }
+auto-format = true
+
+[[language]]
+name = "css"
+formatter = { command = "prettier", args = ["--parser", "css"] }
+auto-format = true
