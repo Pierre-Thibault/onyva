@@ -31,8 +31,19 @@ dev = [
 
 [tool.ruff.lint]
 select = [
+    "D",     # pydocstyle - docstring conventions
     "T203",  # Detect leftover icecream (ic) calls
 ]
+ignore = [
+    "D104",  # Missing docstring in public package (__init__.py)
+    "D203",  # Conflicts with D211 (no blank line before class docstring)
+    "D213",  # Conflicts with D212 (multi-line summary first line)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["D"]                # No docstrings required in tests
+"docs/**/conf.py" = ["D100"]           # Sphinx config files
+"src/onyva/core/models.py" = ["D"]     # TODO: fix docstrings
 
 [project.scripts]
 onyva = "onyva.web.app:run"
@@ -52,13 +63,13 @@ typeCheckingMode = "strict"
 pythonVersion = "3.14"
 stubPath = "typings"
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [tool.coverage.run]
 source = ["src/onyva"]
 branch = true
-omit = [
-    "src/scripts/*",
-    "src/onyva/core/models.py",  # TODO: add tests
-]
+omit = ["src/scripts/*"]
 
 [tool.coverage.report]
 fail_under = 100

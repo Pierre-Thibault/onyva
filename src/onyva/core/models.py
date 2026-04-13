@@ -5,7 +5,6 @@ from typing import Self
 
 from pydantic import BaseModel
 
-
 type ProgressUnit = str
 """The progress unit. For example: km, %, pages"""
 
@@ -112,6 +111,13 @@ class ToDo(BaseModel):
 
     @property
     def status(self) -> Status | None:
+        """The status of the to-do.
+
+        Of it has no direct status, looks that the status of its direct children. If all the children are having the
+        same status and this status is NOT_STARTED, IN_PROGRESS, DONE or PAUSED, return that status. Otherwise, if any
+        children is IN_PROGRESS or DONE, return IN_PROGRESS.
+        """
+
         if self._status:
             return self._status
         if not self.children:
@@ -130,6 +136,10 @@ class ToDo(BaseModel):
 
     @property
     def priority(self) -> Priority:
+        """The priority of the to-do.
+
+        If it has no direct priority, return the status search its ancestors or LOW.
+        """
         if self._priority:
             return self._priority
         if self.parent:
@@ -142,7 +152,10 @@ class ToDo(BaseModel):
 
 
 class ToDoList(MutableSequence[ToDo]):
-    """A sequence of to-dos with their used tags."""
+    """A sequence of to-dos with their used tags
+
+    All the to-dos belonging together are in the list.
+    """
 
     tags: set[Tag]
     _data: list[ToDo]
