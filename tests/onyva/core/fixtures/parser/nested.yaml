@@ -1,0 +1,54 @@
+- to_do_id: road-map
+  title: Road map
+  status: in_progress
+  priority: high
+  todo_type: open
+  tracking:
+    mode: cumulative
+    target: null
+  progress: 0.0
+  start: null
+  end: null
+  depends_on: []
+  before: []
+  smart: null
+  created: null
+  tags: [pro]
+  parent: null
+  children:
+    - to_do_id: être-prêt-comme-développeur-python
+      title: Être prêt comme développeur Python
+      status: in_progress
+      priority: high
+      todo_type: open
+      tracking:
+        mode: cumulative
+        target: null
+      progress: 0.0
+      start: null
+      end: null
+      depends_on: []
+      before: []
+      smart: null
+      created: null
+      tags: []
+      parent: road-map
+      children: []
+    - to_do_id: maîtriser-pydantic
+      title: Maîtriser Pydantic
+      status: null
+      priority: high
+      todo_type: open
+      tracking:
+        mode: cumulative
+        target: null
+      progress: 0.0
+      start: null
+      end: null
+      depends_on: []
+      before: []
+      smart: null
+      created: null
+      tags: []
+      parent: road-map
+      children: []
