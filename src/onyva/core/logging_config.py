@@ -18,7 +18,10 @@ def configure_logging() -> None:
     else:
         renderer = structlog.dev.ConsoleRenderer()
 
-    level = getattr(logging, log_level.upper(), logging.INFO)
+    valid_levels = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+    if log_level.upper() not in valid_levels:
+        raise ValueError(f"Invalid LOG_LEVEL: {log_level!r}. Must be one of {sorted(valid_levels)}")
+    level = getattr(logging, log_level.upper())
 
     structlog.configure(
         processors=[

@@ -4,29 +4,29 @@ version = "0.1.0"
 description = "Personal data management tool"
 requires-python = ">=3.14"
 dependencies = [
-    "babel",
-    "bottle",
-    "dynaconf",
-    "mako",
-    "marko",
-    "pydantic>=2.12.5",
-    "pyyaml",
-    "structlog",
+    "babel",                # i18n: string extraction, translation catalogs, locale formatting
+    "bottle",               # web: lightweight WSGI framework
+    "dynaconf",             # configuration management with environment support
+    "mako",                 # web: HTML templating engine
+    "marko",                # parser: Markdown AST parser
+    "pydantic>=2.12.5",     # data models with validation
+    "pyyaml",               # parser: YAML parsing for todo metadata
+    "structlog",            # structured logging
 ]
 
 [dependency-groups]
 dev = [
-    "basedpyright",
-    "icecream",
-    "pytest",
-    "pytest-bdd",
-    "pytest-cov",
-    "ruff",
-    "sphinx",
-    "sphinx-intl",
-    "sphinxcontrib-mermaid",
-    "tox",
-    "webtest",
+    "basedpyright",         # strict static type checker
+    "icecream",             # debug printing (must not appear in committed code)
+    "pytest",               # test framework
+    "pytest-bdd",           # BDD-style tests with Gherkin scenarios
+    "pytest-cov",           # test coverage measurement
+    "ruff",                 # linter and formatter
+    "sphinx",               # documentation builder
+    "sphinx-intl",          # Sphinx i18n support for multi-language docs
+    "sphinxcontrib-mermaid", # Mermaid diagram support in Sphinx
+    "tox",                  # test environment automation
+    "webtest",              # HTTP testing for WSGI apps
 ]
 
 [tool.ruff.lint]
@@ -36,14 +36,14 @@ select = [
 ]
 ignore = [
     "D104",  # Missing docstring in public package (__init__.py)
-    "D203",  # Conflicts with D211 (no blank line before class docstring)
-    "D213",  # Conflicts with D212 (multi-line summary first line)
 ]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["D"]                # No docstrings required in tests
 "docs/**/conf.py" = ["D100"]           # Sphinx config files
-"src/onyva/core/models.py" = ["D"]     # TODO: fix docstrings
 
 [project.scripts]
 onyva = "onyva.web.app:run"
