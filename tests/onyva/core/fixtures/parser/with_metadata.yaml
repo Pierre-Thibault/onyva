@@ -18,6 +18,7 @@
     relevant: Nécessaire pour se positionner sur le marché
     time_bound: 2026-05-24
   created: 2026-02-26
-  tags: [pro]
+  tags:
+  - pro
   parent: null
   children: []

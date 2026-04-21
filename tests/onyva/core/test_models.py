@@ -8,10 +8,10 @@ from onyva.core.models import (
     SmartDescription,
     Status,
     ToDo,
-    ToDoList,
     ToDoType,
     Tracking,
     TrackingMode,
+    get_tags_from_todos,
 )
 
 
@@ -39,7 +39,6 @@ def test_todo_properties() -> None:
         "created": date(2026, 1, 1),
         "tags": {"health", "sport"},
         "parent": ToDo(to_do_id="parent-1", title="Parent"),
-        "children": [ToDo(to_do_id="child-1", title="Child")],
     }
     todo = ToDo(to_do_id="todo-1", title="Initial title")
 
@@ -49,6 +48,11 @@ def test_todo_properties() -> None:
     for name, value in properties.items():
         assert getattr(todo, name) == value, f"Property '{name}' does not match expected value"
 
+    child = ToDo(to_do_id="child-1", title="Child")
+    todo.add_child(child)
+    assert todo.children == [child]
+    assert child.parent == todo
+
 
 def test_status_not_started_when_all_children_not_started() -> None:
     """Test that status is NOT_STARTED when all children are not started."""
@@ -57,7 +61,7 @@ def test_status_not_started_when_all_children_not_started() -> None:
     child1.status = Status.NOT_STARTED
     child2.status = Status.NOT_STARTED
 
-    parent = ToDo(to_do_id="p1", title="Parent", children=[child1, child2])
+    parent = ToDo.create(to_do_id="p1", title="Parent", children=[child1, child2])
 
     assert parent.status == Status.NOT_STARTED
 
@@ -69,7 +73,7 @@ def test_status_in_progress_when_all_children_in_progress() -> None:
     child1.status = Status.IN_PROGRESS
     child2.status = Status.IN_PROGRESS
 
-    parent = ToDo(to_do_id="p1", title="Parent", children=[child1, child2])
+    parent = ToDo.create(to_do_id="p1", title="Parent", children=[child1, child2])
 
     assert parent.status == Status.IN_PROGRESS
 
@@ -81,7 +85,7 @@ def test_status_done_when_all_children_done() -> None:
     child1.status = Status.DONE
     child2.status = Status.DONE
 
-    parent = ToDo(to_do_id="p1", title="Parent", children=[child1, child2])
+    parent = ToDo.create(to_do_id="p1", title="Parent", children=[child1, child2])
 
     assert parent.status == Status.DONE
 
@@ -93,7 +97,7 @@ def test_status_paused_when_all_children_paused() -> None:
     child1.status = Status.PAUSED
     child2.status = Status.PAUSED
 
-    parent = ToDo(to_do_id="p1", title="Parent", children=[child1, child2])
+    parent = ToDo.create(to_do_id="p1", title="Parent", children=[child1, child2])
 
     assert parent.status == Status.PAUSED
 
@@ -105,7 +109,7 @@ def test_status_derived_from_children_uniform() -> None:
     child1.status = Status.DONE
     child2.status = Status.DONE
 
-    parent = ToDo(to_do_id="p1", title="Parent", children=[child1, child2])
+    parent = ToDo.create(to_do_id="p1", title="Parent", children=[child1, child2])
 
     assert parent.status == Status.DONE
 
@@ -117,7 +121,7 @@ def test_status_derived_from_children_mixed() -> None:
     child1.status = Status.DONE
     child2.status = Status.NOT_STARTED
 
-    parent = ToDo(to_do_id="p1", title="Parent", children=[child1, child2])
+    parent = ToDo.create(to_do_id="p1", title="Parent", children=[child1, child2])
 
     assert parent.status == Status.IN_PROGRESS
 
@@ -135,7 +139,7 @@ def test_status_none_when_all_children_cancelled() -> None:
     child1.status = Status.CANCELLED
     child2.status = Status.CANCELLED
 
-    parent = ToDo(to_do_id="p1", title="Parent", children=[child1, child2])
+    parent = ToDo.create(to_do_id="p1", title="Parent", children=[child1, child2])
 
     assert parent.status is None
 
@@ -156,23 +160,20 @@ def test_priority_defaults_to_low() -> None:
     assert todo.priority == Priority.LOW
 
 
-def test_todo_list_operations() -> None:
-    """Test ToDoList sequence operations."""
-    todo1 = ToDo(to_do_id="t1", title="Todo 1", tags={"work"})
-    todo2 = ToDo(to_do_id="t2", title="Todo 2", tags={"personal"})
+def test_get_tags_from_todos() -> None:
+    """Test that get_tags_from_todos returns a mapping of tags to todos."""
+    todo1 = ToDo(to_do_id="t1", title="Todo 1", tags={"work", "urgent"})
+    todo2 = ToDo(to_do_id="t2", title="Todo 2", tags={"work", "personal"})
+    todo3 = ToDo(to_do_id="t3", title="Todo 3", tags={"personal"})
 
-    todo_list = ToDoList([todo1])
+    result = get_tags_from_todos([todo1, todo2, todo3])
 
-    assert len(todo_list) == 1
+    assert len(result["work"]) == 2 and todo1 in result["work"] and todo2 in result["work"]
+    assert len(result["personal"]) == 2 and todo2 in result["personal"] and todo3 in result["personal"]
+    assert result["urgent"] == [todo1]
 
-    todo_list.insert(1, todo2)
-    assert len(todo_list) == 2
-    assert "personal" in todo_list.tags
 
-    todo3 = ToDo(to_do_id="t3", title="Todo 3", tags={"health"})
-    todo_list[0] = todo3
-    assert todo_list[0] == todo3
-    assert "health" in todo_list.tags
-
-    del todo_list[0]
-    assert len(todo_list) == 1
+def test_get_tags_from_todos_empty() -> None:
+    """Test that get_tags_from_todos returns an empty dict for todos without tags."""
+    todo = ToDo(to_do_id="t1", title="Todo 1")
+    assert get_tags_from_todos([todo]) == {}

@@ -1,7 +1,7 @@
-- to_do_id: road-map
-  title: Road map
-  status: in_progress
-  priority: high
+- to_do_id: root
+  title: Root
+  status: null
+  priority: low
   todo_type: open
   tracking:
     mode: cumulative
@@ -13,32 +13,13 @@
   before: []
   smart: null
   created: null
-  tags:
-  - pro
+  tags: []
   parent: null
   children:
-  - to_do_id: être-prêt-comme-développeur-python
-    title: Être prêt comme développeur Python
-    status: in_progress
-    priority: high
-    todo_type: open
-    tracking:
-      mode: cumulative
-      target: null
-    progress: 0.0
-    start: null
-    end: null
-    depends_on: []
-    before: []
-    smart: null
-    created: null
-    tags: []
-    parent: road-map
-    children: []
-  - to_do_id: maîtriser-pydantic
-    title: Maîtriser Pydantic
+  - to_do_id: child1
+    title: First Child
     status: null
-    priority: high
+    priority: low
     todo_type: open
     tracking:
       mode: cumulative
@@ -51,5 +32,41 @@
     smart: null
     created: null
     tags: []
-    parent: road-map
+    parent: root
+    children:
+    - to_do_id: grandchild
+      title: Grandchild
+      status: null
+      priority: low
+      todo_type: open
+      tracking:
+        mode: cumulative
+        target: null
+      progress: 0.0
+      start: null
+      end: null
+      depends_on: []
+      before: []
+      smart: null
+      created: null
+      tags: []
+      parent: child1
+      children: []
+  - to_do_id: child2
+    title: Second Child
+    status: null
+    priority: low
+    todo_type: open
+    tracking:
+      mode: cumulative
+      target: null
+    progress: 0.0
+    start: null
+    end: null
+    depends_on: []
+    before: []
+    smart: null
+    created: null
+    tags: []
+    parent: root
     children: []

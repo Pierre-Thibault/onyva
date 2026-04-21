@@ -1,4 +1,4 @@
-## Commencer à faire entrer des revenus
+## commencer-à-faire-entrer-des-revenus : Commencer à faire entrer des revenus
 
 ```yaml
 priority: medium

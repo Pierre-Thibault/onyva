@@ -1,0 +1,20 @@
+- to_do_id: tags-todo
+  title: Todo with Tags
+  status: null
+  priority: low
+  todo_type: open
+  tracking:
+    mode: cumulative
+    target: null
+  progress: 0.0
+  start: null
+  end: null
+  depends_on: []
+  before: []
+  smart: null
+  created: null
+  tags:
+  - tag1
+  - tag2
+  parent: null
+  children: []

@@ -57,24 +57,24 @@ def _parse_todo(document_iterator: Iterator[object]) -> Iterator[ToDo]:
 
     current_todo: ToDo | None = None
     current_root_todo: ToDo | None = None
-    while True:
-        current_todo_level = current_todo.level if current_todo else 1
-        match _get_next_node(document_iterator):
+    while node := _get_next_node(document_iterator):
+        match node:
             case Heading(level=heading_level) as heading if current_todo or heading_level == FIRST_TODO_HEADING_LEVEL:
+                heading_todo_level = heading_level - FIRST_TODO_HEADING_LEVEL + 1
                 todo_text: str = _get_text_from_element(heading)
+                if heading_todo_level > (current_todo.level if current_todo else 1) + 1:
+                    log.error("Missing one or more parents. To-do is ignored", todo=todo_text)
+                    continue
                 match = HEADING_REGEX.match(todo_text)
-                if match:
-                    heading_todo_level = _convert_heading_level_to_todo_level(heading_level)
-                    if heading_todo_level > current_todo_level + 1:
-                        log.error("Missing one or more parents. To-do is ignored", todo=todo_text)
-                    else:
-                        match_id = match.group("id")
-                        match_title = match.group("title")
-                        parent_todo = _get_parent_todo(current_todo, heading_todo_level)
-                        current_todo = ToDo.create(to_do_id=match_id, title=match_title, parent=parent_todo)
-                        if heading_todo_level == 1:
-                            yield from yield_todo_if_exists(current_root_todo)
-                            current_root_todo = current_todo
+                if not match:
+                    continue
+                match_id = match.group("id")
+                match_title = match.group("title")
+                parent_todo = _get_parent_todo(current_todo, heading_todo_level)
+                current_todo = ToDo.create(to_do_id=match_id, title=match_title, parent=parent_todo)
+                if heading_todo_level == 1:
+                    yield from yield_todo_if_exists(current_root_todo)
+                    current_root_todo = current_todo
             case FencedCode() as fenced_code if current_todo:
                 properties: dict[Any, Any] = _get_todo_properties(fenced_code)
                 for key, value in properties.items():
@@ -98,11 +98,9 @@ def _parse_todo(document_iterator: Iterator[object]) -> Iterator[ToDo]:
                         )
             case Paragraph() as paragraph if current_todo:
                 current_todo.tags.update(_get_tags_from_paragraph(paragraph))
-            case None:
-                yield from yield_todo_if_exists(current_root_todo)  # Yield the last pending todo
-                return
             case _:
                 pass
+    yield from yield_todo_if_exists(current_root_todo)  # Yield the last pending todo if any
 
 
 def _get_parent_todo(current_todo: ToDo | None, heading_todo_level: int) -> ToDo | None:
@@ -125,8 +123,7 @@ def _get_parent_todo(current_todo: ToDo | None, heading_todo_level: int) -> ToDo
     elif heading_todo_level == current_todo_level + 1:
         return current_todo
     elif heading_todo_level < current_todo_level:
-        while heading_todo_level < current_todo_level:
-            heading_todo_level += 1
+        for _ in range(current_todo_level - heading_todo_level):
             current_todo = current_todo.parent
             if current_todo is None:  # pragma: no cover
                 raise RuntimeError("Current to-do level was not expected to be None.")
@@ -135,23 +132,11 @@ def _get_parent_todo(current_todo: ToDo | None, heading_todo_level: int) -> ToDo
         raise AssertionError("Logical error in managing to-do parent. heading_level is too big.")
 
 
-def _convert_heading_level_to_todo_level(heading_level: int) -> int:
-    """Convert a heading level to its corresponding todo level (root = 1).
-
-    Args:
-        heading_level: The Markdown heading level (e.g. 2 for ``##``).
-
-    Returns:
-        The todo level, where 1 is the root level.
-    """
-    return heading_level - FIRST_TODO_HEADING_LEVEL + 1
-
-
 def _get_next_node(document_iterator: Iterator[object]) -> Heading | FencedCode | Paragraph | None:
     """Returns the next useful node in the document iterator.
 
     Args:
-        document_iterator: An iterator over the document objects.
+        document_iterator: An iterator over the top-level nodes of the Marko document.
 
     Returns:
         The next node in the document iterator, or None if no matching node
