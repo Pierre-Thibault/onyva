@@ -122,7 +122,7 @@ def _parse_todo(document_iterator: Iterator[object]) -> _ToDoParseResult:
                     todo_id = None
                     todo_title = todo_text
                 parent_todo = _get_parent_todo(current_todo, heading_todo_level)
-                current_todo = ToDo.create(to_do_id=todo_id, title=todo_title, parent=parent_todo)
+                current_todo = ToDo.create(todo_id=todo_id, title=todo_title, parent=parent_todo)
                 if heading_todo_level == 1:
                     yield from yield_todo_if_exists(current_root_todo)
                     issues.clear()
@@ -140,7 +140,7 @@ def _parse_todo(document_iterator: Iterator[object]) -> _ToDoParseResult:
                                 issues=issues,
                                 property=key,
                                 value=value,
-                                todo=current_todo.to_do_id,
+                                todo=current_todo.todo_id,
                                 error=str(e),
                             )
                     else:
@@ -149,7 +149,7 @@ def _parse_todo(document_iterator: Iterator[object]) -> _ToDoParseResult:
                             level="warning",
                             issues=issues,
                             property=key,
-                            todo=current_todo.to_do_id,
+                            todo=current_todo.todo_id,
                             hint=_did_you_mean(key, ToDo.PROPERTY_TYPES),
                         )
             case Paragraph() as paragraph if current_todo:

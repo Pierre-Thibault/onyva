@@ -1,4 +1,4 @@
-- to_do_id: root
+- todo_id: root
   title: Root Todo
   status: null
   priority: low
@@ -16,7 +16,7 @@
   tags: []
   parent: null
   children:
-  - to_do_id: null
+  - todo_id: null
     title: Child Without ID
     status: null
     priority: low

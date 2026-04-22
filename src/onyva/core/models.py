@@ -98,7 +98,7 @@ class ToDo(BaseModel):
 
     model_config = ConfigDict(validate_assignment=True)
 
-    to_do_id: ToDoId | None
+    todo_id: ToDoId | None
     title: str
     _status: Status | None = PrivateAttr(default=None)
     _priority: Priority | None = PrivateAttr(default=None)
@@ -133,7 +133,7 @@ class ToDo(BaseModel):
     """Names of fields that can be set from a data file.
 
     Used by the parser to validate property names from YAML blocks. Fields
-    managed by the application (to_do_id, parent, children) are excluded.
+    managed by the application (todo_id, parent, children) are excluded.
     """
 
     @property

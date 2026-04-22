@@ -1,4 +1,4 @@
-- to_do_id: todo-a
+- todo_id: todo-a
   title: First Todo
   status: null
   priority: low
@@ -16,7 +16,7 @@
   tags: []
   parent: null
   children: []
-- to_do_id: todo-b
+- todo_id: todo-b
   title: Second Todo
   status: null
   priority: low

@@ -22,7 +22,7 @@ def _todo_to_dict(todo: ToDo) -> dict[str, Any]:
     """Convert a ToDo to a dictionary suitable for YAML comparison."""
     d: dict[str, Any] = todo.model_dump()
     return {
-        "to_do_id": d["to_do_id"],
+        "todo_id": d["todo_id"],
         "title": d["title"],
         "status": str(todo.status) if todo.status else None,
         "priority": str(todo.priority),
@@ -36,7 +36,7 @@ def _todo_to_dict(todo: ToDo) -> dict[str, Any]:
         "smart": d["smart"],
         "created": d["created"],
         "tags": sorted(todo.tags),
-        "parent": todo.parent.to_do_id if todo.parent else None,
+        "parent": todo.parent.todo_id if todo.parent else None,
         "children": [_todo_to_dict(child) for child in todo.children],
     }
 

@@ -1,4 +1,4 @@
-- to_do_id: root
+- todo_id: root
   title: Root
   status: null
   priority: low
@@ -16,7 +16,7 @@
   tags: []
   parent: null
   children:
-  - to_do_id: child1
+  - todo_id: child1
     title: First Child
     status: null
     priority: low
@@ -34,7 +34,7 @@
     tags: []
     parent: root
     children:
-    - to_do_id: grandchild
+    - todo_id: grandchild
       title: Grandchild
       status: null
       priority: low
@@ -52,7 +52,7 @@
       tags: []
       parent: child1
       children: []
-  - to_do_id: child2
+  - todo_id: child2
     title: Second Child
     status: null
     priority: low
