@@ -98,7 +98,7 @@ class ToDo(BaseModel):
 
     model_config = ConfigDict(validate_assignment=True)
 
-    to_do_id: ToDoId
+    to_do_id: ToDoId | None
     title: str
     _status: Status | None = PrivateAttr(default=None)
     _priority: Priority | None = PrivateAttr(default=None)

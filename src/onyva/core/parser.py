@@ -102,12 +102,17 @@ def _parse_todo(document_iterator: Iterator[object]) -> _ToDoParseResult:
                     )
                     continue
                 match = HEADING_REGEX.match(todo_text)
-                if not match:
-                    continue
-                match_id = match.group("id")
-                match_title = match.group("title")
+                if match:
+                    todo_id = match.group("id")
+                    todo_title = match.group("title")
+                else:
+                    if heading_todo_level == 1:
+                        current_todo = None
+                        continue
+                    todo_id = None
+                    todo_title = todo_text
                 parent_todo = _get_parent_todo(current_todo, heading_todo_level)
-                current_todo = ToDo.create(to_do_id=match_id, title=match_title, parent=parent_todo)
+                current_todo = ToDo.create(to_do_id=todo_id, title=todo_title, parent=parent_todo)
                 if heading_todo_level == 1:
                     yield from yield_todo_if_exists(current_root_todo)
                     issues.clear()

@@ -80,7 +80,7 @@ def test_parse_issues_missing_parent() -> None:
 
 
 def test_parse_no_issues() -> None:
-    for name in ("simple", "nested", "going_up", "with_metadata", "with_tags", "with_no_id_heading"):
+    for name in ("simple", "nested", "going_up", "with_metadata", "with_tags", "with_no_id_heading", "with_no_id_child"):  # fmt: skip
         result = parse_file(_FIXTURES / f"{name}.md")
         assert result.issues == [], f"Unexpected issues in {name}.md"
 
