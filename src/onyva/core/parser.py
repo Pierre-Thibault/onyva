@@ -2,8 +2,10 @@
 
 import difflib
 import re
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable, Iterator, cast
+from types import MappingProxyType
+from typing import Any, Iterable, Iterator, Literal, Sequence, cast
 
 import structlog
 import yaml
@@ -12,7 +14,7 @@ from marko.block import FencedCode, Heading, Paragraph
 from marko.inline import RawText
 from pydantic import ValidationError
 
-from onyva.core.models import ToDo  # pragma: no cover
+from onyva.core.models import ToDo
 
 FIRST_TODO_HEADING_LEVEL = 2
 "The heading level for the to-dos at the root."
@@ -26,18 +28,49 @@ TAG_REGEX = re.compile(r"#([\w/-]+)")
 log = structlog.get_logger()
 
 
-def parse_file(file: Path) -> list[ToDo]:
-    """Parse the markdown file and return a list of ToDo. The list keeps the order of the file."""
+type ParseIssueLevel = Literal["warning", "error"]
+"A parsing issue level. Either a warning or an error."
+
+
+@dataclass(frozen=True)
+class ParseIssue:
+    """A parsing issue definition."""
+
+    level: ParseIssueLevel
+    message: str
+    details: MappingProxyType[str, Any]
+
+
+@dataclass(frozen=True)
+class ParseResult:
+    """The result of parse_file."""
+
+    todos: Sequence[ToDo]
+    "The root to-dos parsed in the file."
+    issues: Sequence[ParseIssue]
+    "The issues while parsing. Errors and warnings."
+
+
+def parse_file(file: Path) -> ParseResult:
+    """Parse the markdown file and return a ParseResult. The list keeps the order of the file."""
     return _parse_text(file.read_text())
 
 
-def _parse_text(text: str) -> list[ToDo]:
-    """Parse the markdown text and return a list of ToDo. The list keeps the order of the file."""
+def _parse_text(text: str) -> ParseResult:
+    """Parse the markdown text and return a ParseResult. The list keeps the order of the file."""
     document_iterator: Iterator[object] = iter(Markdown().parse(text).children)
-    return list(_parse_todo(document_iterator))
+    todos: list[ToDo] = []
+    issues: list[ParseIssue] = []
+    for todo, new_issues in _parse_todo(document_iterator):
+        todos.append(todo)
+        issues.extend(new_issues)
+    return ParseResult(todos=todos, issues=issues)
 
 
-def _parse_todo(document_iterator: Iterator[object]) -> Iterator[ToDo]:
+type _ToDoParseResult = Iterator[tuple[ToDo, list[ParseIssue]]]  # Result of parsing a single ToDo
+
+
+def _parse_todo(document_iterator: Iterator[object]) -> _ToDoParseResult:
     """Parse todos from the document iterator and yield them in file order.
 
     Handles nested todos by tracking the current todo and its level. Yields
@@ -47,23 +80,26 @@ def _parse_todo(document_iterator: Iterator[object]) -> Iterator[ToDo]:
         document_iterator: An iterator over the top-level nodes of the Marko document.
 
     Yields:
-        ToDo objects in file order.
+        ToDo objects in file order with a list of parsing issues.
     """
 
-    def yield_todo_if_exists(todo: ToDo | None) -> Iterator[ToDo]:
-        """Yield todo if todo exist."""
+    def yield_todo_if_exists(todo: ToDo | None) -> _ToDoParseResult:
+        """Yield todo if todo exists with the issues."""
         if todo:
-            yield todo
+            yield todo, issues
 
     current_todo: ToDo | None = None
     current_root_todo: ToDo | None = None
+    issues: list[ParseIssue] = []
     while node := _get_next_node(document_iterator):
         match node:
             case Heading(level=heading_level) as heading if current_todo or heading_level == FIRST_TODO_HEADING_LEVEL:
                 heading_todo_level = heading_level - FIRST_TODO_HEADING_LEVEL + 1
                 todo_text: str = _get_text_from_element(heading)
                 if heading_todo_level > (current_todo.level if current_todo else 1) + 1:
-                    log.error("Missing one or more parents. To-do is ignored", todo=todo_text)
+                    _add_parsing_issue(
+                        "Missing one or more parents. To-do is ignored", level="error", issues=issues, todo=todo_text
+                    )
                     continue
                 match = HEADING_REGEX.match(todo_text)
                 if not match:
@@ -74,24 +110,29 @@ def _parse_todo(document_iterator: Iterator[object]) -> Iterator[ToDo]:
                 current_todo = ToDo.create(to_do_id=match_id, title=match_title, parent=parent_todo)
                 if heading_todo_level == 1:
                     yield from yield_todo_if_exists(current_root_todo)
+                    issues.clear()
                     current_root_todo = current_todo
             case FencedCode() as fenced_code if current_todo:
-                properties: dict[Any, Any] = _get_todo_properties(fenced_code)
+                properties: dict[Any, Any] = _get_todo_properties(fenced_code, issues)
                 for key, value in properties.items():
                     if key in ToDo.PROPERTY_TYPES:
                         try:
                             setattr(current_todo, key, value)
                         except ValidationError as e:
-                            log.error(
+                            _add_parsing_issue(
                                 "Invalid property value",
+                                level="error",
+                                issues=issues,
                                 property=key,
                                 value=value,
                                 todo=current_todo.to_do_id,
                                 error=str(e),
                             )
                     else:
-                        log.warning(
+                        _add_parsing_issue(
                             "Unknown property",
+                            level="warning",
+                            issues=issues,
                             property=key,
                             todo=current_todo.to_do_id,
                             hint=_did_you_mean(key, ToDo.PROPERTY_TYPES),
@@ -162,11 +203,12 @@ def _get_text_from_element(node: Heading | FencedCode | Paragraph) -> str:
     return ""
 
 
-def _get_todo_properties(fenced_code: FencedCode) -> dict[Any, Any]:
+def _get_todo_properties(fenced_code: FencedCode, issues: list[ParseIssue]) -> dict[Any, Any]:
     """Get the YAML properties defined by the embedded YAML code.
 
     Args:
-        fenced_code: FencedCode parsed my Marko.
+        fenced_code: FencedCode parsed by Marko.
+        issues: The list to append any parsing issues to.
 
     Returns:
         The properties as a dictionary or return an empty dictionary if the yaml value if not a dictionary.
@@ -176,7 +218,7 @@ def _get_todo_properties(fenced_code: FencedCode) -> dict[Any, Any]:
         yaml_result: Any = yaml.safe_load(text)
         if isinstance(yaml_result, dict):
             return cast(dict[Any, Any], yaml_result)
-        log.warning("The YAML was not defining to-do properties.", code=text)
+        _add_parsing_issue("The YAML was not defining to-do properties.", level="warning", issues=issues, code=text)
     return {}
 
 
@@ -199,3 +241,15 @@ def _did_you_mean(key: str, valid_keys: Iterable[str]) -> str:
     """
     matches = difflib.get_close_matches(key, valid_keys, n=1)
     return f" Did you mean '{matches[0]}'?" if matches else ""
+
+
+def _add_parsing_issue(message: str, /, level: ParseIssueLevel, issues: list[ParseIssue], **details: Any) -> None:
+    """Log the issue, create a ParseIssue and add it to issues."""
+    if level == "warning":
+        log_function = log.warning
+    elif level == "error":
+        log_function = log.error
+    else:
+        raise RuntimeError("Unexpected issue level.")  # pragma: no cover
+    log_function(message, **details)
+    issues.append(ParseIssue(level=level, message=message, details=MappingProxyType(details)))
