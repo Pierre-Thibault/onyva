@@ -91,6 +91,7 @@ def _parse_todo(document_iterator: Iterator[object]) -> _ToDoParseResult:
     current_todo: ToDo | None = None
     current_root_todo: ToDo | None = None
     issues: list[ParseIssue] = []
+    todo_ids: set[str] = set()
     while node := _get_next_node(document_iterator):
         match node:
             case Heading(level=heading_level) as heading if current_todo or heading_level == FIRST_TODO_HEADING_LEVEL:
@@ -105,6 +106,15 @@ def _parse_todo(document_iterator: Iterator[object]) -> _ToDoParseResult:
                 if match:
                     todo_id = match.group("id")
                     todo_title = match.group("title")
+                    if todo_id in todo_ids:
+                        _add_parsing_issue(
+                            f'ID "{todo_id}" previously used. To-do will be ignored.',
+                            level="error",
+                            issues=issues,
+                            todo_title=todo_title,
+                        )
+                        continue
+                    todo_ids.add(todo_id)
                 else:
                     if heading_todo_level == 1:
                         current_todo = None

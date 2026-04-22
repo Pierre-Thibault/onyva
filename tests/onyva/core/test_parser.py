@@ -71,6 +71,14 @@ def test_parse_issues_invalid_property() -> None:
     assert result.issues[0].details["property"] == "progress"
 
 
+def test_parse_issues_duplicate_id() -> None:
+    result = parse_file(_FIXTURES / "with_duplicate_id.md")
+    assert len(result.issues) == 1
+    assert result.issues[0].level == "error"
+    assert result.issues[0].message == 'ID "todo-a" previously used. To-do will be ignored.'
+    assert result.issues[0].details["todo_title"] == "Duplicate Todo (ignored)"
+
+
 def test_parse_issues_missing_parent() -> None:
     result = parse_file(_FIXTURES / "with_missing_parent.md")
     assert len(result.issues) == 1
