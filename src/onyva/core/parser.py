@@ -11,6 +11,7 @@ import structlog
 import yaml
 from marko import Markdown
 from marko.block import FencedCode, Heading, Paragraph
+from marko.element import Element
 from marko.inline import RawText
 from pydantic import ValidationError
 
@@ -59,7 +60,7 @@ class Parser:
 
     def __init__(self) -> None:
         """Initialize the parser."""
-        self._document_iterator: Iterator[object] = iter([])
+        self._document_iterator: Iterator[Element] = iter([])
         self._current_todo: ToDo | None = None
         self._issues: list[ParseIssue] = []
         self._todo_ids: set[str] = set()
