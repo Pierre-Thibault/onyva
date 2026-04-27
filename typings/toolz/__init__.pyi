@@ -1,0 +1,19 @@
+from typing import Any, Callable, TypeVar, overload
+
+_T = TypeVar("_T")
+_U = TypeVar("_U")
+_V = TypeVar("_V")
+_W = TypeVar("_W")
+_X = TypeVar("_X")
+
+@overload
+def pipe(data: _T, f1: Callable[[_T], _U]) -> _U: ...
+@overload
+def pipe(data: _T, f1: Callable[[_T], _U], f2: Callable[[_U], _V]) -> _V: ...
+@overload
+def pipe(data: _T, f1: Callable[[_T], _U], f2: Callable[[_U], _V], f3: Callable[[_V], _W]) -> _W: ...
+@overload
+def pipe(data: _T, f1: Callable[[_T], _U], f2: Callable[[_U], _V], f3: Callable[[_V], _W], f4: Callable[[_W], _X]) -> _X: ...
+@overload
+def pipe(data: Any, *funcs: Callable[[Any], Any]) -> Any: ...
+def pipe(data: Any, *funcs: Callable[[Any], Any]) -> Any: ...

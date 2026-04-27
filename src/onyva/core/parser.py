@@ -3,6 +3,7 @@
 import difflib
 import re
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Iterable, Iterator, Literal, Sequence, cast, final
@@ -14,6 +15,7 @@ from marko.block import FencedCode, Heading, Paragraph
 from marko.element import Element
 from marko.inline import RawText
 from pydantic import ValidationError
+from toolz import pipe
 
 from onyva.core.models import ToDo
 
@@ -25,6 +27,19 @@ HEADING_REGEX = re.compile(r"^(?P<id>[\w-]+)\s*:\s*(?P<title>.+)$")
 
 TAG_REGEX = re.compile(r"#([\w/-]+)")
 "The regular expression used to extract tags from text."
+
+
+ACTIVITY_LOG_TITLE = "Activity log"
+"The title marking an activity log."
+
+
+ACTIVITY_LOG_MANDATORY_KEYS = ("date", "value")
+"The mandatory columns for an activity log."
+
+
+ACTIVITY_LOG_OPTIONAL_KEYS = ("task", "notes")
+"The optional columns for an activity log."
+
 
 log = structlog.get_logger()
 
@@ -87,13 +102,18 @@ class Parser:
         current_root_todo: ToDo | None = None
         self._issues = []
         self._todo_ids = set()
+        activity_title_found = False
         while node := self._get_next_node():
             match node:
                 case Heading(level=heading_level) as heading if (
                     self._current_todo or heading_level == FIRST_TODO_HEADING_LEVEL
                 ):
-                    heading_todo_level = heading_level - FIRST_TODO_HEADING_LEVEL + 1
                     todo_text: str = Parser._get_text_from_element(heading)
+                    if todo_text == ACTIVITY_LOG_TITLE:
+                        activity_title_found = True
+                        continue
+                    activity_title_found = False
+                    heading_todo_level = heading_level - FIRST_TODO_HEADING_LEVEL + 1
                     if heading_todo_level > (self._current_todo.level if self._current_todo else 1) + 1:
                         self._add_parsing_issue(
                             "Missing one or more parents. To-do is ignored", level="error", todo=todo_text
@@ -146,8 +166,11 @@ class Parser:
                                 todo=self._current_todo.todo_id,
                                 hint=Parser._did_you_mean(key, ToDo.PROPERTY_TYPES),
                             )
-                case Paragraph() as paragraph if self._current_todo:
-                    self._current_todo.tags.update(Parser._get_tags_from_paragraph(paragraph))
+                case Paragraph() as paragraph:
+                    if activity_title_found:
+                        pass
+                    elif self._current_todo:
+                        self._current_todo.tags.update(Parser._get_tags_from_paragraph(paragraph))
                 case _:
                     pass
         if current_root_todo:
@@ -240,6 +263,28 @@ class Parser:
         """Get the tags present in a paragraph or an empty set if none is present."""
         text = Parser._get_text_from_element(paragraph)
         return set(TAG_REGEX.findall(text))
+
+    # def _get_column_titles_from_paragraph(self, paragraph: Paragraph) -> frozenset[str]:
+    #     """Get the column titles at the top of table"""
+    #     table_header = Parser._get_text_from_element(paragraph).strip()
+    #     if not (table_header.startswith("|") and table_header.endswith("|")):
+    #         return frozenset()
+    #     column_list: list[str] = cast(
+    #         list[str],
+    #         pipe(
+    #             table_header,
+    #             partial(str.split, sep="|"),
+    #             partial(map, str.strip),
+    #             str.lower,
+    #             partial(filter, None),
+    #             list,
+    #         ),
+    #     )
+    #     column_set = frozenset(column_list)
+    #     if len(column_set) < len(column_list):
+    #         self._add_parsing_issue("Duplicate column titles", level="error", column_titles=column_list)
+    #         return frozenset()
+    #     return column_set
 
     @staticmethod
     def _did_you_mean(key: str, valid_keys: Iterable[str]) -> str:

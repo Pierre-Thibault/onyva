@@ -8,10 +8,11 @@ dependencies = [
     "bottle",               # web: lightweight WSGI framework
     "dynaconf",             # configuration management with environment support
     "mako",                 # web: HTML templating engine
-    "marko",                # parser: Markdown AST parser
+    "marko",
     "pydantic>=2.12.5",     # data models with validation
     "pyyaml",               # parser: YAML parsing for todo metadata
     "structlog",            # structured logging
+    "toolz",                # functional utilities: compose, curry, groupby, etc.
 ]
 
 [dependency-groups]

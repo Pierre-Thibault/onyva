@@ -1,6 +1,6 @@
 """Data models for the onyva application."""
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from datetime import date, datetime
 from enum import StrEnum
 from typing import ClassVar, Self
@@ -93,6 +93,14 @@ class ToDoType(StrEnum):
     """The to-do has not a defined ending"""
 
 
+class ActivityEntry(BaseModel):
+    """An activity entry in the activity journal."""
+
+    date: date | datetime
+    value: ProgressValue
+    notes: str | None = None
+
+
 class ToDo(BaseModel):
     """A to-do item with optional hierarchy, tracking, and metadata."""
 
@@ -114,6 +122,7 @@ class ToDo(BaseModel):
     tags: set[Tag] = set()
     parent: Self | None = None
     _children: list[Self] = PrivateAttr(default_factory=list)
+    _activities: list[ActivityEntry] = PrivateAttr(default_factory=list)
 
     PROPERTY_TYPES: ClassVar[set[str]] = {
         "title",
@@ -137,9 +146,14 @@ class ToDo(BaseModel):
     """
 
     @property
-    def children(self) -> list[Self]:
+    def children(self) -> Sequence[Self]:
         """The children of the to-do. Read-only: use add_child to add children."""
         return self._children
+
+    @property
+    def activities(self) -> Sequence[ActivityEntry]:
+        """The activity journal entries for this to-do. Read-only."""
+        return self._activities
 
     @property
     def level(self) -> int:
@@ -150,6 +164,10 @@ class ToDo(BaseModel):
         """Add a child to the to-do and set its parent."""
         child.parent = self
         self._children.append(child)
+
+    def add_activity(self, activity: ActivityEntry) -> None:
+        """Add an activity entry to this to-do."""
+        self._activities.append(activity)
 
     @classmethod
     def create(cls, *, children: list[Self] | None = None, **kwargs: object) -> Self:
@@ -211,3 +229,5 @@ def get_tags_from_todos(todos: Iterable[ToDo]) -> dict[Tag, list[ToDo]]:
         for tag in todo.tags:
             result.setdefault(tag, []).append(todo)
     return result
+
+
