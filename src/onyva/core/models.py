@@ -3,11 +3,11 @@
 from collections.abc import Iterable, Sequence
 from datetime import date, datetime
 from enum import StrEnum
-from typing import ClassVar, Self
+from typing import Annotated, ClassVar, Self
 
-from pydantic import BaseModel, ConfigDict, PrivateAttr
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, StringConstraints, model_validator
 
-type ProgressUnit = str
+type ProgressUnit = Annotated[str, StringConstraints(pattern=r"^\D")]
 """The progress unit. For example: km, %, pages"""
 
 type Tag = str
@@ -31,7 +31,7 @@ class ProgressValue(BaseModel):
     """A progression value to the goal. For example: 12km, 20%, 30 pages. Should use the same unit as the parent."""
 
     unit: ProgressUnit
-    value: float
+    value: Annotated[float, Field(ge=0)]
 
 
 class SmartDescription(BaseModel):
@@ -82,6 +82,15 @@ class Tracking(BaseModel):
     mode: TrackingMode
     target: ProgressValue | None
 
+    @model_validator(mode="after")
+    def validate_target(self) -> "Tracking":
+        """Validate that target is None if and only if mode is FIXED."""
+        if self.mode == TrackingMode.FIXED and self.target is not None:
+            raise ValueError("target must be None when mode is FIXED")
+        if self.mode != TrackingMode.FIXED and self.target is None:
+            raise ValueError("target is required when mode is not FIXED")
+        return self  # Must be None only if TrackingMode is FIXED
+
 
 class ToDoType(StrEnum):
     """To-do type."""
@@ -111,7 +120,7 @@ class ToDo(BaseModel):
     _status: Status | None = PrivateAttr(default=None)
     _priority: Priority | None = PrivateAttr(default=None)
     todo_type: ToDoType = ToDoType.OPEN
-    tracking: Tracking = Tracking(mode=TrackingMode.CUMULATIVE, target=None)
+    tracking: Tracking = Tracking(mode=TrackingMode.CUMULATIVE, target=ProgressValue(unit="%", value=100.0))
     progress: float = 0.0
     start: date | datetime | None = None
     end: date | datetime | None = None
@@ -229,5 +238,3 @@ def get_tags_from_todos(todos: Iterable[ToDo]) -> dict[Tag, list[ToDo]]:
         for tag in todo.tags:
             result.setdefault(tag, []).append(todo)
     return result
-
-
