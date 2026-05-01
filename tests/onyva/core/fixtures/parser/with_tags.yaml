@@ -5,7 +5,9 @@
   todo_type: open
   tracking:
     mode: cumulative
-    target: null
+    target:
+      unit: '%'
+      value: 100.0
   progress: 0.0
   start: null
   end: null

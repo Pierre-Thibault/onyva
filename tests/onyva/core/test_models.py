@@ -2,6 +2,9 @@
 
 from datetime import date
 
+import pytest
+from pydantic import ValidationError
+
 from onyva.core.models import (
     Priority,
     ProgressValue,
@@ -171,6 +174,36 @@ def test_get_tags_from_todos() -> None:
     assert len(result["work"]) == 2 and todo1 in result["work"] and todo2 in result["work"]
     assert len(result["personal"]) == 2 and todo2 in result["personal"] and todo3 in result["personal"]
     assert result["urgent"] == [todo1]
+
+
+def test_progress_unit_cannot_start_with_digit() -> None:
+    """Test that a ProgressUnit starting with a digit raises a ValidationError."""
+    with pytest.raises(ValidationError):
+        ProgressValue(unit="5km", value=10.0)
+
+
+def test_progress_value_cannot_be_negative() -> None:
+    """Test that a negative ProgressValue raises a ValidationError."""
+    with pytest.raises(ValidationError):
+        ProgressValue(unit="km", value=-1.0)
+
+
+def test_tracking_fixed_mode_requires_none_target() -> None:
+    """Test that FIXED mode requires target to be None."""
+    with pytest.raises(ValidationError):
+        Tracking(mode=TrackingMode.FIXED, target=ProgressValue(unit="km", value=10.0))
+
+
+def test_tracking_cumulative_mode_requires_target() -> None:
+    """Test that CUMULATIVE mode requires a non-None target."""
+    with pytest.raises(ValidationError):
+        Tracking(mode=TrackingMode.CUMULATIVE, target=None)
+
+
+def test_tracking_performance_mode_requires_target() -> None:
+    """Test that PERFORMANCE mode requires a non-None target."""
+    with pytest.raises(ValidationError):
+        Tracking(mode=TrackingMode.PERFORMANCE, target=None)
 
 
 def test_get_tags_from_todos_empty() -> None:
